@@ -83,6 +83,10 @@ const rankCls = r => r === 1 ? '#d99a00' : r === 2 ? '#90a4ae' : r === 3 ? '#c97
           <span class="t" style="text-align:right"><span class="badge">{{ m.teamB?.name }}<span class="dot" :style="{ background: store.unitOfUid(m.teamB?.unit_id)?.color }"></span></span></span>
         </div>
         <div v-if="m.note" class="note-line">📝 {{ m.note }}</div>
+        <div v-if="m.referees && m.referees.length" class="ref-line">
+          🧑‍⚖️ <span v-for="(r, i) in m.referees" :key="r.assignment_id"><span :class="{ rcf: r.conflict_flag && m.status==='scheduled' }">{{ r.role }} {{ r.name }}<em v-if="r.conflict_flag && m.status==='scheduled'">⚠</em></span><span v-if="i < m.referees.length-1"> · </span></span>
+        </div>
+        <div v-else-if="m.status==='scheduled'" class="ref-line ph">🧑‍⚖️ 尚未安排执法裁判（可至「裁判排班」页安排）</div>
         <div v-if="active?.id === m.id && needTB" class="tbrow">
           <span>⚔️ 常规时间平分 · 加时/点球决胜：</span>
           <input v-model.number="ta" type="number" min="0" class="score-in" style="width:48px">
@@ -129,4 +133,7 @@ const rankCls = r => r === 1 ? '#d99a00' : r === 2 ? '#90a4ae' : r === 3 ? '#c97
 .score-in { font-weight: 800; font-size: 15px; text-align: center; }
 .tbrow { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; padding: 7px 10px; border-radius: 10px; background: #fff7ed; border: 1px dashed var(--accent); font-size: 12px; color: var(--muted); }
 .note-line { font-size: 12px; color: var(--muted); margin-top: 8px; padding: 5px 9px; background: var(--bg2); border-radius: 8px; }
+.ref-line { font-size: 11.5px; margin-top: 8px; padding: 5px 9px; background: #f4f8ff; border-radius: 8px; }
+.ref-line .rcf { color: #e5484d; font-weight: 700; }
+.ref-line em { font-style: normal; }
 </style>

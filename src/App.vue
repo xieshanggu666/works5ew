@@ -17,7 +17,7 @@ store.init()
 const navs = [
   ['overview', '🏟️', '赛事总览'], ['schedule', '🗓️', '赛程编排'], ['score', '⚡', '成绩录入'],
   ['bracket', '🧩', '对阵积分'], ['registration', '📝', '报名审核'], ['team', '👥', '队伍运动员'],
-  ['venue', '📍', '场地裁判'], ['medal', '🥇', '奖牌榜'], ['reports', '📊', '报表中心']
+  ['venue', '📍', '裁判排班'], ['medal', '🥇', '奖牌榜'], ['reports', '📊', '报表中心']
 ]
 const view = ref('overview')
 const cur = { overview: OverviewView, schedule: ScheduleView, score: ScoreView, bracket: BracketView, registration: RegistrationView, team: TeamView, venue: VenueView, medal: MedalView, reports: ReportsView }

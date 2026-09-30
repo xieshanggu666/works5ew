@@ -59,7 +59,7 @@ async function withdraw(r) {
   try {
     const res = await store.withdrawRegistration(r.id, note.value)
     const im = res.impact
-    showToast(`✅ 已退报。同步处理：弃权 ${im.walkover} 场 · 取消成绩 ${im.voided} 场${im.entries ? ' · 田径成绩 ' + im.entries + ' 条' : ''}`)
+    showToast(`✅ 已退报。同步处理：弃权 ${im.walkover} 场 · 取消成绩 ${im.voided} 场 · 释放执法安排 ${im.assignments || 0} 个${im.entries ? ' · 田径成绩 ' + im.entries + ' 条' : ''}`)
     cancelAct()
   } catch (e) { showToast('⚠️ ' + e.message) }
 }
@@ -67,7 +67,7 @@ async function revoke(r) {
   try {
     const res = await store.revokeRegistration(r.id, note.value)
     const im = res.impact
-    showToast(`✅ 已撤销资格。同步处理：弃权 ${im.walkover} 场 · 取消成绩 ${im.voided} 场${im.entries ? ' · 田径成绩 ' + im.entries + ' 条' : ''}`)
+    showToast(`✅ 已撤销资格。同步处理：弃权 ${im.walkover} 场 · 取消成绩 ${im.voided} 场 · 释放执法安排 ${im.assignments || 0} 个${im.entries ? ' · 田径成绩 ' + im.entries + ' 条' : ''}`)
     cancelAct()
   } catch (e) { showToast('⚠️ ' + e.message) }
 }
@@ -129,10 +129,10 @@ const unitColor = uid => store.unitOfUid(uid)?.color || '#ccc'
         <div class="pad" style="font-size:13px;line-height:1.9;color:var(--ink)">
           <p>· 各单位提交报名后状态为 <span class="tag o">待审核</span>，组委会审核<b>资格与名额</b>。</p>
           <p>· 名额按项目核定，<b>通过数不得超过名额上限</b>；通过后状态为 <span class="tag g">已通过</span>，纳入参赛名单。</p>
-          <p>· 循环赛项目若<b>尚未开赛</b>，通过后自动重排对阵，把新队伍纳入赛程。</p>
-          <p>· <span class="tag gray">已退报</span> / <span class="tag r">已撤销</span> 时同步处理受影响的对阵及成绩：</p>
-          <p style="padding-left:14px">— 未赛场次：判弃权，对手 <b>3:0</b> 胜；</p>
-          <p style="padding-left:14px">— 已赛场次：<b>取消该场成绩</b>，重算积分榜与奖牌；</p>
+          <p>· 循环赛项目若<b>尚未开赛</b>，通过后自动重排对阵，把新队伍纳入赛程；<b>原裁判排班随对阵自动迁移</b>，被拆散对阵的排班自动释放并留痕。</p>
+          <p>· <span class="tag gray">已退报</span> / <span class="tag r">已撤销</span> 时同步处理受影响的对阵、成绩与<b>执法安排</b>：</p>
+          <p style="padding-left:14px">— 未赛场次：判弃权，对手 <b>3:0</b> 胜，裁判到场完成弃权判罚，排班保留并写联动日志；</p>
+          <p style="padding-left:14px">— 已赛场次：<b>取消该场成绩</b>，自动释放该场全部裁判排班、重算积分榜与奖牌；</p>
           <p style="padding-left:14px">— 田径项目：删除该运动员成绩并重排名。</p>
         </div>
       </div>

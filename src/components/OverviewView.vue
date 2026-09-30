@@ -26,6 +26,14 @@ const prog = computed(() => tot.value ? Math.round((doneTotal.value / Math.max(1
       <div class="card stat"><span class="bar" style="background:linear-gradient(90deg,#22c15e,#7edda4)"></span><span class="ic">⛳</span><b>{{ prog }}%</b><em>整体完成度</em></div>
     </div>
 
+    <!-- 裁判排班联动 -->
+    <div class="grid g4 mt" v-if="ov.officiating">
+      <div class="card stat"><span class="bar" style="background:linear-gradient(90deg,#22c15e,#7edda4)"></span><span class="ic">🧑‍⚖️</span><b>{{ ov.officiating.covered }}<span style="font-size:14px;color:var(--muted);font-weight:600"> / {{ ov.pendingMatches || 0 }}</span></b><em>已排裁判 / 待赛场次</em></div>
+      <div class="card stat"><span class="bar" style="background:linear-gradient(90deg,#ffb92b,#ffd98a)"></span><span class="ic">🕳️</span><b>{{ ov.officiating.unassigned }}</b><em>未安排执法</em></div>
+      <div class="card stat"><span class="bar" style="background:linear-gradient(90deg,#e5484d,#f0a1a1)"></span><span class="ic">⚠️</span><b>{{ ov.officiating.conflict_matches }}</b><em>排班冲突场次（场地/裁判）</em></div>
+      <div class="card stat"><span class="bar" style="background:linear-gradient(90deg,#9b59b6,#c39bd3)"></span><span class="ic">📜</span><b>{{ store.assignmentLogs.length || 0 }}</b><em>排班操作留痕</em></div>
+    </div>
+
     <div class="grid g2 mt">
       <!-- 项目进度 -->
       <div class="card">
@@ -45,7 +53,7 @@ const prog = computed(() => tot.value ? Math.round((doneTotal.value / Math.max(1
         <div class="caption">🏁 最近完赛/待赛场次</div>
         <div class="pad" style="display:flex;flex-direction:column;gap:10px">
           <div v-for="m in ov.recent" :key="m.id" class="mcard" :class="{ done: m.status === 'finished' }">
-            <div class="mheader"><span>{{ m.teamA?.name }} · {{ m.stage }}{{ m.group_name || '' }}</span><span>⚽ {{ m.venue?.name }}</span></div>
+            <div class="mheader"><span>{{ m.teamA?.name }} · {{ m.stage }}{{ m.group_name || '' }}</span><span>🗓️ {{ m.date_label }} {{ m.time_label }} · ⚽ {{ m.venue?.name }}</span></div>
             <div class="mrow">
               <span class="t"><span class="badge"><span class="dot" :style="{ background: store.unitOfUid(m.teamA?.unit_id)?.color }"></span>{{ m.teamA?.name || '待定' }}</span></span>
               <span class="score-chip ph" v-if="m.status==='scheduled'">— : —</span>
@@ -53,6 +61,10 @@ const prog = computed(() => tot.value ? Math.round((doneTotal.value / Math.max(1
               <span class="score-chip" v-else>{{ m.score_a }} : {{ m.score_b }}<template v-if="m.tb_a != null">（决胜 {{ m.tb_a }}:{{ m.tb_b }}）</template></span>
               <span class="t" style="text-align:right"><span class="badge">{{ m.teamB?.name || '待定' }}<span class="dot" :style="{ background: store.unitOfUid(m.teamB?.unit_id)?.color }"></span></span></span>
             </div>
+            <div v-if="m.referees && m.referees.length" class="ref-line">
+              🧑‍⚖️ <span v-for="(r, i) in m.referees" :key="r.assignment_id"><span :class="{ rcf: r.conflict_flag }">{{ r.role }} {{ r.name }}<em v-if="r.conflict_flag">⚠</em></span><span v-if="i < m.referees.length-1"> · </span></span>
+            </div>
+            <div v-else-if="m.status==='scheduled'" class="ref-line ph">🧑‍⚖️ 尚未安排执法裁判</div>
             <div v-if="m.note" class="note-line">📝 {{ m.note }}</div>
           </div>
         </div>
@@ -83,4 +95,7 @@ const prog = computed(() => tot.value ? Math.round((doneTotal.value / Math.max(1
 
 <style scoped>
 .note-line { font-size: 12px; color: var(--muted); margin-top: 6px; padding: 5px 9px; background: var(--bg2); border-radius: 8px; }
+.ref-line { font-size: 11.5px; color: var(--ink); margin-top: 7px; padding: 5px 9px; background: #f4f8ff; border-radius: 8px; }
+.ref-line .rcf { color: #e5484d; font-weight: 700; }
+.ref-line em { font-style: normal; }
 </style>

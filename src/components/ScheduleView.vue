@@ -60,7 +60,7 @@ const canKO = sid => {
           <div v-for="m in list.filter(x=>x.sport_id===s.id).sort((a,b)=>a.order_no-b.order_no)" :key="m.id" class="mcard" :class="{ done: m.status==='finished' }">
             <div class="mheader">
               <span><span class="tag" :class="m.status==='finished' ? '' : m.status==='void' ? 'r' : 'o'">{{ m.stage }}{{ m.group_name ? ' · ' + m.group_name : '' }}</span></span>
-              <span>⏱ {{ m.time_label }}</span>
+              <span>🗓️ {{ m.date_label }} {{ m.time_label }} · ⏱{{ m.duration }}′</span>
             </div>
             <div class="mrow">
               <span class="t"><span class="badge"><span class="dot" :style="{ background: store.unitOfUid(m.teamA?.unit_id)?.color }"></span>{{ m.teamA?.name || '待定' }}</span></span>
@@ -69,6 +69,10 @@ const canKO = sid => {
               <span class="score-chip" v-else>{{ m.score_a }}:{{ m.score_b }}<template v-if="m.tb_a != null">（决胜 {{ m.tb_a }}:{{ m.tb_b }}）</template></span>
               <span class="t" style="text-align:right"><span class="badge">{{ m.teamB?.name || '待定' }}<span class="dot" :style="{ background: store.unitOfUid(m.teamB?.unit_id)?.color }"></span></span></span>
             </div>
+            <div v-if="m.referees && m.referees.length" class="ref-line">
+              🧑‍⚖️ <span v-for="(r, i) in m.referees" :key="r.assignment_id"><span :class="{ rcf: r.conflict_flag }">{{ r.role }} {{ r.name }}<em v-if="r.conflict_flag">⚠</em></span><span v-if="i < m.referees.length-1"> · </span></span>
+            </div>
+            <div v-else-if="m.status==='scheduled'" class="ref-line ph">🧑‍⚖️ 尚未安排执法裁判</div>
             <div v-if="m.note" class="note-line">📝 {{ m.note }}</div>
             <div style="font-size:11px;color:var(--muted);margin-top:8px">📍 {{ m.venue?.name }} <span style="float:right" :class="m.status==='finished' ? 'tag g' : m.status==='void' ? 'tag r' : 'tag o'">{{ m.status==='finished' ? '已完赛' : m.status==='void' ? '已取消' : '待赛' }}</span></div>
           </div>
@@ -81,4 +85,7 @@ const canKO = sid => {
 
 <style scoped>
 .note-line { font-size: 12px; color: var(--muted); margin-top: 6px; padding: 5px 9px; background: var(--bg2); border-radius: 8px; }
+.ref-line { font-size: 11.5px; margin-top: 6px; padding: 5px 9px; background: #f4f8ff; border-radius: 8px; }
+.ref-line .rcf { color: #e5484d; font-weight: 700; }
+.ref-line em { font-style: normal; }
 </style>

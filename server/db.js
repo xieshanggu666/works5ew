@@ -42,8 +42,35 @@ CREATE TABLE IF NOT EXISTS venues (
 CREATE TABLE IF NOT EXISTS referees (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  sport TEXT,
-  status TEXT DEFAULT '就绪'
+  sport TEXT,                    -- 可执法专项（项目名）；NULL/空 = 综合执法
+  level TEXT DEFAULT '一级',      -- 国家级 / 一级 / 二级
+  phone TEXT,
+  status TEXT DEFAULT '就绪'      -- 就绪 / 休假 / 停赛
+);
+-- 执法安排（裁判排班）：一场比赛可担任 主裁判 / 副裁判 / 记录台 等不同角色
+CREATE TABLE IF NOT EXISTS assignments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  match_id INTEGER NOT NULL,
+  referee_id INTEGER NOT NULL,
+  role TEXT NOT NULL DEFAULT '主裁判',   -- 主裁判 / 副裁判 / 记录台
+  status TEXT NOT NULL DEFAULT 'active', -- active 生效中 / released 已释放（调班、改派、场次取消）
+  conflict_flag INTEGER DEFAULT 0,       -- 1 = 明知时间冲突仍强制安排
+  created_at TEXT DEFAULT (datetime('now','localtime')),
+  created_by TEXT
+);
+-- 同一场比赛中同一名裁判至多保留一条生效安排（已释放的历史记录不占约束）
+CREATE UNIQUE INDEX IF NOT EXISTS idx_assign_active
+  ON assignments(match_id, referee_id) WHERE status='active';
+-- 排班操作留痕（分配 / 调班 / 释放 / 改期 / 赛程联动自动处理）
+CREATE TABLE IF NOT EXISTS assignment_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  action TEXT NOT NULL,        -- assign 安排 / swap 调班 / release 释放 / reschedule 改期 / sync 赛程联动
+  match_id INTEGER,
+  referee_id INTEGER,
+  role TEXT,
+  detail TEXT,
+  operator TEXT,
+  created_at TEXT DEFAULT (datetime('now','localtime'))
 );
 CREATE TABLE IF NOT EXISTS matches (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,6 +82,8 @@ CREATE TABLE IF NOT EXISTS matches (
   venue_id INTEGER,
   order_no INTEGER,
   time_label TEXT,
+  date_label TEXT DEFAULT '第1比赛日',   -- 比赛日（YYYY-MM-DD 或 第N比赛日）
+  duration INTEGER DEFAULT 60,           -- 预计时长（分钟），用于时间重叠检测
   score_a INTEGER,
   score_b INTEGER,
   tb_a INTEGER,          -- 加时/点球决胜比分（淘汰赛常规时间平分时必填）
@@ -121,6 +150,12 @@ CREATE TABLE IF NOT EXISTS registrations (
   try { db.prepare(`ALTER TABLE athletes ADD COLUMN ${col} ${def}`).run() } catch (e) { /* 列已存在 */ }
 })
 try { db.prepare(`ALTER TABLE matches ADD COLUMN note TEXT`).run() } catch (e) { /* 列已存在 */ }
+;[['date_label', "TEXT DEFAULT '第1比赛日'"], ['duration', 'INTEGER DEFAULT 60']].forEach(([col, def]) => {
+  try { db.prepare(`ALTER TABLE matches ADD COLUMN ${col} ${def}`).run() } catch (e) { /* 列已存在 */ }
+})
+;[['level', "TEXT DEFAULT '一级'"], ['phone', 'TEXT']].forEach(([col, def]) => {
+  try { db.prepare(`ALTER TABLE referees ADD COLUMN ${col} ${def}`).run() } catch (e) { /* 列已存在 */ }
+})
 // 回填历史已完赛场次的胜方；小组/循环平局 winner 保持 NULL
 db.prepare(`UPDATE matches SET winner = CASE WHEN score_a > score_b THEN team_a WHEN score_b > score_a THEN team_b ELSE NULL END WHERE status='finished' AND winner IS NULL`).run()
 
