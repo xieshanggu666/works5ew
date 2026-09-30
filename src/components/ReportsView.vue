@@ -24,6 +24,17 @@ const unitPoints = computed(() => {
   return Object.values(m).sort((a, b) => b.pts - a.pts)
 })
 const maxPts = computed(() => Math.max(1, ...unitPoints.value.map(x => x.pts)))
+
+// —— 裁判排班联动报表 ——
+const refereeRows = computed(() => store.workload)
+const maxDone = computed(() => Math.max(1, ...refereeRows.value.map(r => (r.done || 0) + (r.upcoming || 0))))
+const coverage = computed(() => {
+  const pend = store.matches.filter(m => m.status === 'scheduled' && m.team_a && m.team_b && store.sports.find(s => s.id === m.sport_id)?.format !== 'track')
+  const covered = pend.filter(m => store.chiefOf(m.id))
+  return { total: pend.length, covered: covered.length, pct: pend.length ? Math.round(covered.length / pend.length * 100) : 100 }
+})
+const recentLogs = computed(() => store.assignmentLogs.slice(0, 6)
+  .map(l => ({ ...l, name: { assign: '排班', force_assign: '强制排班', auto_assign: '自动排班', release: '解除', reassign: '临时调班', swap: '调班对调', match_change: '赛程变更', schedule_added: '赛程新增', schedule_rebuild: '赛程重排', match_finish: '完赛归档', void_release: '取消解除' }[l.action] || l.action })))
 </script>
 
 <template>
@@ -62,6 +73,49 @@ const maxPts = computed(() => Math.max(1, ...unitPoints.value.map(x => x.pts)))
       </div>
     </div>
 
+    <!-- 裁判执法工作量与排班覆盖 -->
+    <div class="grid g2 mt">
+      <div class="card">
+        <div class="caption">🧑‍⚖️ 裁判执法工作量 <span class="hint">已完赛 / 待赛（含历史场次）</span></div>
+        <div class="pad" style="display:flex;flex-direction:column;gap:13px">
+          <div v-for="r in refereeRows" :key="r.id">
+            <div class="row spread" style="margin-bottom:6px">
+              <span class="badge">{{ r.name }} <span class="tag gray" style="margin-left:4px">{{ r.sport || '综合执法' }} · {{ r.level }}</span></span>
+              <b class="mono"><span style="color:var(--accent2)">{{ r.done || 0 }}</span> / <span style="color:var(--accent3)">{{ r.upcoming || 0 }}</span></b>
+            </div>
+            <div class="hbar-duo">
+              <i class="d" :style="{ width: ((r.done || 0) / maxDone) * 100 + '%' }"></i><i class="u" :style="{ width: ((r.upcoming || 0) / maxDone) * 100 + '%' }"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="caption">📡 排班覆盖率与最新变更</div>
+        <div class="pad">
+          <div class="row spread" style="margin-bottom:8px">
+            <span class="badge">待赛场次主裁覆盖率</span>
+            <b class="mono" style="font-size:16px;color:var(--accent)">{{ coverage.covered }}/{{ coverage.total }}（{{ coverage.pct }}%）</b>
+          </div>
+          <div class="hbar"><i :style="{ width: coverage.pct + '%', background: coverage.pct === 100 ? 'var(--accent2)' : 'var(--accent)' }"></i></div>
+          <div class="row spread mt16" style="margin-bottom:8px"><span class="badge">⛔ 未决冲突</span>
+            <b :style="{ color: (store.conflicts?.referee_conflicts.length || 0) + (store.conflicts?.venue_conflicts.length || 0) ? '#e5484d' : 'var(--accent2)' }">
+              {{ (store.conflicts?.referee_conflicts.length || 0) + (store.conflicts?.venue_conflicts.length || 0) }} 起
+            </b>
+          </div>
+          <table style="margin-top:6px">
+            <thead><tr><th>操作</th><th>详情</th><th>操作人</th></tr></thead>
+            <tbody>
+              <tr v-for="l in recentLogs" :key="l.id">
+                <td style="white-space:nowrap">{{ l.name }}</td>
+                <td class="ph" style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.detail }}</td>
+                <td>{{ l.operator }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- 项目明细 -->
     <div class="card mt">
       <div class="caption">🗂️ 赛事项目明细与规则</div>
@@ -83,3 +137,10 @@ const maxPts = computed(() => Math.max(1, ...unitPoints.value.map(x => x.pts)))
     </div>
   </div>
 </template>
+
+<style scoped>
+.hbar-duo { position: relative; height: 9px; border-radius: 20px; background: var(--bg2); overflow: hidden; display: flex; }
+.hbar-duo i { display: block; height: 100%; border-radius: 20px; }
+.hbar-duo i.d { background: var(--accent2); }
+.hbar-duo i.u { background: var(--accent3); margin-left: 2px; }
+</style>

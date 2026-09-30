@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS venues (
 CREATE TABLE IF NOT EXISTS referees (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  sport TEXT,
+  sport TEXT,                    -- 专长项目（NULL = 综合执法）
+  level TEXT DEFAULT '主裁',      -- 主裁 / 助理裁判 / 记录台
   status TEXT DEFAULT '就绪'
 );
 CREATE TABLE IF NOT EXISTS matches (
@@ -107,6 +108,31 @@ CREATE TABLE IF NOT EXISTS registrations (
   reviewer TEXT,
   review_note TEXT
 );
+-- 裁判执法安排（场次 × 裁判；仅 assigned 状态参与冲突检测）
+CREATE TABLE IF NOT EXISTS assignments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  match_id INTEGER NOT NULL,
+  referee_id INTEGER NOT NULL,
+  role TEXT NOT NULL DEFAULT 'chief',   -- chief(主裁) / assistant(助理裁判) / recorder(记录台)
+  status TEXT NOT NULL DEFAULT 'assigned', -- assigned(在派) / released(已解除)
+  created_at TEXT DEFAULT (datetime('now','localtime')),
+  released_at TEXT
+);
+-- 同一场次同一名裁判只允许存在一条"在派"安排（解除后可重新排班）
+CREATE UNIQUE INDEX IF NOT EXISTS idx_assignment_active
+  ON assignments(match_id, referee_id) WHERE status='assigned';
+-- 排班/调班/赛程变更全量留痕
+CREATE TABLE IF NOT EXISTS assignment_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  action TEXT NOT NULL,        -- assign/force_assign/auto_assign/release/reassign/swap/match_change/schedule_added/schedule_rebuild/match_finish/void_release
+  match_id INTEGER,
+  referee_id INTEGER,
+  detail TEXT,                 -- 人类可读快照（场次/裁判/变更前后）
+  reason TEXT,
+  operator TEXT,
+  created_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_logs_match ON assignment_logs(match_id);
 `)
 
 // —— 旧库迁移：补充字段（列已存在则忽略） ——
@@ -121,6 +147,9 @@ CREATE TABLE IF NOT EXISTS registrations (
   try { db.prepare(`ALTER TABLE athletes ADD COLUMN ${col} ${def}`).run() } catch (e) { /* 列已存在 */ }
 })
 try { db.prepare(`ALTER TABLE matches ADD COLUMN note TEXT`).run() } catch (e) { /* 列已存在 */ }
+;[['level', "TEXT DEFAULT '主裁'"], ['sport', 'TEXT'], ['status', "TEXT DEFAULT '就绪'"]].forEach(([col, def]) => {
+  try { db.prepare(`ALTER TABLE referees ADD COLUMN ${col} ${def}`).run() } catch (e) { /* 列已存在 */ }
+})
 // 回填历史已完赛场次的胜方；小组/循环平局 winner 保持 NULL
 db.prepare(`UPDATE matches SET winner = CASE WHEN score_a > score_b THEN team_a WHEN score_b > score_a THEN team_b ELSE NULL END WHERE status='finished' AND winner IS NULL`).run()
 

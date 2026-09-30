@@ -30,13 +30,13 @@ async function saveScore() {
     return
   }
   try {
-    await store.score(active.value.id, sa.value, sb.value, needTB.value ? ta.value : null, needTB.value ? tb.value : null)
-    toast.value = '✅ 比分已录入，积分榜已更新'
+    const r = await store.score(active.value.id, sa.value, sb.value, needTB.value ? ta.value : null, needTB.value ? tb.value : null)
+    toast.value = r?.warning ? '⚠️ ' + r.warning : '✅ 比分已录入，积分榜与执法记录已更新'
     active.value = null
   } catch (e) {
     toast.value = '⚠️ ' + e.message
   }
-  setTimeout(() => toast.value = '', 2400)
+  setTimeout(() => toast.value = '', 3000)
 }
 
 const tr = reactive({})
@@ -83,6 +83,10 @@ const rankCls = r => r === 1 ? '#d99a00' : r === 2 ? '#90a4ae' : r === 3 ? '#c97
           <span class="t" style="text-align:right"><span class="badge">{{ m.teamB?.name }}<span class="dot" :style="{ background: store.unitOfUid(m.teamB?.unit_id)?.color }"></span></span></span>
         </div>
         <div v-if="m.note" class="note-line">📝 {{ m.note }}</div>
+        <div class="crew-line">
+          <span v-if="store.chiefOf(m.id)" class="tag b">🧑‍⚖️ 主裁：{{ store.chiefOf(m.id).referee?.name }}</span>
+          <span v-else-if="m.status==='scheduled'" class="tag o">🟠 尚未安排主裁</span>
+        </div>
         <div v-if="active?.id === m.id && needTB" class="tbrow">
           <span>⚔️ 常规时间平分 · 加时/点球决胜：</span>
           <input v-model.number="ta" type="number" min="0" class="score-in" style="width:48px">
@@ -129,4 +133,5 @@ const rankCls = r => r === 1 ? '#d99a00' : r === 2 ? '#90a4ae' : r === 3 ? '#c97
 .score-in { font-weight: 800; font-size: 15px; text-align: center; }
 .tbrow { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; padding: 7px 10px; border-radius: 10px; background: #fff7ed; border: 1px dashed var(--accent); font-size: 12px; color: var(--muted); }
 .note-line { font-size: 12px; color: var(--muted); margin-top: 8px; padding: 5px 9px; background: var(--bg2); border-radius: 8px; }
+.crew-line { margin-top: 8px; }
 </style>

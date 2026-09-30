@@ -19,10 +19,11 @@ const prog = computed(() => tot.value ? Math.round((doneTotal.value / Math.max(1
       </div>
     </div>
 
-    <div class="grid g4">
+    <div class="grid" style="grid-template-columns:repeat(5,1fr)">
       <div class="card stat"><span class="bar" style="background:linear-gradient(90deg,#ff7a2f,#ffb27e)"></span><span class="ic">🏅</span><b>{{ tot }}</b><em>比赛项目</em></div>
       <div class="card stat"><span class="bar" style="background:linear-gradient(90deg,#2f9bff,#79c4ff)"></span><span class="ic">🗓️</span><b>{{ doneTotal }}</b><em>已完赛场次</em></div>
       <div class="card stat"><span class="bar" style="background:linear-gradient(90deg,#dd5b5b,#f0a1a1)"></span><span class="ic">⏳</span><b>{{ ov.pendingMatches || 0 }}</b><em>待赛预约</em></div>
+      <div class="card stat"><span class="bar" style="background:linear-gradient(90deg,#ffb92b,#ffd98a)"></span><span class="ic">🧑‍⚖️</span><b>{{ ov.unassignedMatches ?? 0 }}</b><em>待安排主裁</em></div>
       <div class="card stat"><span class="bar" style="background:linear-gradient(90deg,#22c15e,#7edda4)"></span><span class="ic">⛳</span><b>{{ prog }}%</b><em>整体完成度</em></div>
     </div>
 

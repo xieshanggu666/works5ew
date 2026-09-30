@@ -70,7 +70,11 @@ const canKO = sid => {
               <span class="t" style="text-align:right"><span class="badge">{{ m.teamB?.name || '待定' }}<span class="dot" :style="{ background: store.unitOfUid(m.teamB?.unit_id)?.color }"></span></span></span>
             </div>
             <div v-if="m.note" class="note-line">📝 {{ m.note }}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:8px">📍 {{ m.venue?.name }} <span style="float:right" :class="m.status==='finished' ? 'tag g' : m.status==='void' ? 'tag r' : 'tag o'">{{ m.status==='finished' ? '已完赛' : m.status==='void' ? '已取消' : '待赛' }}</span></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:8px">
+              📍 {{ m.venue?.name }}
+              <span v-if="m.status==='scheduled'" style="margin-left:8px">🧑‍⚖️ {{ store.chiefOf(m.id)?.referee?.name || '主裁待安排' }}</span>
+              <span style="float:right" :class="m.status==='finished' ? 'tag g' : m.status==='void' ? 'tag r' : 'tag o'">{{ m.status==='finished' ? '已完赛' : m.status==='void' ? '已取消' : '待赛' }}</span>
+            </div>
           </div>
           <div v-if="!list.filter(x=>x.sport_id===s.id).length" class="empty">暂无场次</div>
         </div>
